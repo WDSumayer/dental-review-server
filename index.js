@@ -77,6 +77,11 @@ async function run() {
             const review = await dentalReviewCollection.findOne(query)
             res.send(review)
         })
+        app.post('/services', async(req, res) => {
+            const service = req.body;
+            const result = await dentalServiceCollection.insertOne(service)
+            res.send(result)
+        })
         app.post('/reviews', async(req, res) => {
             const review = req.body;
             const result = await dentalReviewCollection.insertOne(review)
@@ -88,8 +93,7 @@ async function run() {
             const review = req.body;
             const updateReview = {
                 $set: {
-                    description: review.description,
-                    date: review.date
+                    description: review.description
                 }
             }
             const result = await dentalReviewCollection.updateOne(query, updateReview)
