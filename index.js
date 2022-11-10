@@ -88,7 +88,8 @@ async function run() {
             const review = req.body;
             const updateReview = {
                 $set: {
-                    description: review.description
+                    description: review.description,
+                    date: review.date
                 }
             }
             const result = await dentalReviewCollection.updateOne(query, updateReview)
