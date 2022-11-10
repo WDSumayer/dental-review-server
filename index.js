@@ -14,11 +14,36 @@ app.use(express.json())
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.nrkuqgj.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
-console.log(uri)
+
+
+function verifyJWT(req, res, next) {
+    const authHeader = req.headers.authorization;
+    if(!authHeader){
+
+        return res.status(401).send({message: 'unathorized access'})
+    }
+    const token = authHeader.split(' ')[1];
+    jwt.verify(token, process.env.ACCESS_SECRET_TOKEN, function(err, decoded){
+        if(err){
+            return res.status(401).send({message: 'unathorized access'})
+        }
+        req.decoded = decoded;
+        next()
+    })
+
+}
+
 async function run() {
     try{
         const dentalServiceCollection = client.db('dentalCare').collection('dentServices');
         const dentalReviewCollection = client.db('dentalCare').collection('dentReviews');
+
+        app.post('/jwt', (req, res) => {
+            const user = req.body;
+            const token = jwt.sign(user, process.env.ACCESS_SECRET_TOKEN, {expiresIn: '1h'})
+            res.send({token})
+        })
+
         app.get('/limitServices', async(req, res) => {
             const query = {}
             const cursor = dentalServiceCollection.find(query)
@@ -58,8 +83,11 @@ async function run() {
            
            
         })
-        app.get('/reviewsByEmail', async(req, res) => {
-            console.log(req.query)
+        app.get('/reviewsByEmail',verifyJWT, async(req, res) => {
+            const decoded = req.decoded;
+            if(decoded.email !== req.query.email){
+              res.status(403).send({message: 'unathorized user'})
+            }
             let query = {}
             console.log(req.query.email)
             if(req.query.email){
